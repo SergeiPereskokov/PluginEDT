@@ -2,7 +2,7 @@ Manifest-Version: 1.0
 Bundle-ManifestVersion: 2
 Bundle-Name: Configuration repository
 Bundle-SymbolicName: dev.zigr.dt.team.ui.storage;singleton:=true
-Bundle-Version: 0.3.0.qualifier
+Bundle-Version: 0.4.0.qualifier
 Import-Package: com._1c.g5.v8.activitytracking.core;version="1.0.0",
  com._1c.g5.v8.bm.core;version="9.1.0",
  com._1c.g5.v8.dt.common;version="6.10.100",
@@ -13,6 +13,8 @@ Import-Package: com._1c.g5.v8.activitytracking.core;version="1.0.0",
  com._1c.g5.v8.dt.metadata.mdclass;version="10.0.0",
  com._1c.g5.v8.dt.platform.services.core.infobases;version="13.0.0",
  com._1c.g5.v8.dt.platform.services.core.infobases.sync;version="9.0.0",
+ com._1c.g5.v8.dt.platform.services.core.infobases.sync.v2;version="1.0.0",
+ com._1c.g5.v8.dt.platform.services.core.runtimes;version="10.0.0",
  com._1c.g5.v8.dt.platform.services.core.runtimes.environments;version="4.0.0",
  com._1c.g5.v8.dt.platform.services.core.runtimes.execution;version="13.0.0",
  com._1c.g5.v8.dt.platform.services.core.runtimes.execution.impl;version="10.0.0",

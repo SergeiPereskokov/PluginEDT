@@ -10,22 +10,25 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.text.MessageFormat;
+import java.util.List;
 import java.util.Map;
-
 import org.eclipse.core.resources.IProject;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IStatus;
 import org.eclipse.xtext.naming.QualifiedName;
 
-import com._1c.g5.v8.dt.common.Pair;
 import com._1c.g5.v8.dt.core.platform.IExtensionProject;
 import com._1c.g5.v8.dt.core.platform.IV8Project;
 import com._1c.g5.v8.dt.core.platform.IV8ProjectManager;
 import com._1c.g5.v8.dt.platform.services.core.infobases.IInfobaseAccessManager;
 import com._1c.g5.v8.dt.platform.services.core.infobases.IInfobaseAccessSettings;
-import com._1c.g5.v8.dt.platform.services.core.infobases.InfobaseAssociationContext;
-import com._1c.g5.v8.dt.platform.services.core.infobases.sync.IConfigDumpInfoStore;
+import com._1c.g5.v8.dt.platform.services.core.infobases.InfobaseAccessType;
+import com._1c.g5.v8.dt.platform.services.core.infobases.sync.v2.IInfobaseSynchronizationStateManager;
+import com._1c.g5.v8.dt.platform.services.core.infobases.sync.v2.IUpdateProjectFlow;
+import com._1c.g5.v8.dt.platform.services.core.runtimes.RuntimeInstallations;
 import com._1c.g5.v8.dt.platform.services.core.runtimes.environments.IResolvableRuntimeInstallation;
+import com._1c.g5.v8.dt.platform.services.core.runtimes.environments.IResolvableRuntimeInstallationManager;
+import com._1c.g5.v8.dt.platform.services.core.runtimes.execution.ComponentExecutorInfo;
 import com._1c.g5.v8.dt.platform.services.core.runtimes.execution.IDesignerSessionThickClientLauncher;
 import com._1c.g5.v8.dt.platform.services.core.runtimes.execution.ILaunchableRuntimeComponent;
 import com._1c.g5.v8.dt.platform.services.core.runtimes.execution.IRuntimeComponentManager;
@@ -47,25 +50,31 @@ public class Designer {
 			ServiceAccess.supplier(IRuntimeComponentManager.class, StorageUiPlugin.getDefault());	
 	private ServiceSupplier<IV8ProjectManager> v8ProjectManagerSupplier = 
 			ServiceAccess.supplier(IV8ProjectManager.class, StorageUiPlugin.getDefault());	
-	private ServiceSupplier<IConfigDumpInfoStore> projectSettingsStoreSupplier = 
-			ServiceAccess.supplier(IConfigDumpInfoStore.class, StorageUiPlugin.getDefault());	
+	private ServiceSupplier<IResolvableRuntimeInstallationManager> resolvableRuntimeInstallationManagerSupplier = 
+			ServiceAccess.supplier(IResolvableRuntimeInstallationManager.class, StorageUiPlugin.getDefault());	
+	private ServiceSupplier<IInfobaseSynchronizationStateManager> infobaseSynchronizationStateManagerSupplier = 
+			ServiceAccess.supplier(IInfobaseSynchronizationStateManager.class, StorageUiPlugin.getDefault());	
 	
 	private IGitBranchIssueDescriptor issueDescriptor;
 	private IProject project;
 	private Path rootDirectory;
 	private Version version;
-	private Pair<ILaunchableRuntimeComponent, IDesignerSessionThickClientLauncher> thickClient;
+	private ComponentExecutorInfo<ILaunchableRuntimeComponent, IDesignerSessionThickClientLauncher> thickClient;
 	private String extensionName;
 	
-	public Designer(IGitBranchIssueDescriptor issueDescriptor, String projectName, Path rootDirectory) throws CoreException, IOException, InterruptedException {
+	public Designer(IGitBranchIssueDescriptor issueDescriptor, String projectName, Path rootDirectory) throws CoreException, IOException, InterruptedException, RuntimeExecutionException {
 		this.issueDescriptor = issueDescriptor;
 		this.project = getV8ProjectManager().getProject(projectName).getProject();
 		this.rootDirectory = rootDirectory;
 		
-		IResolvableRuntimeInstallation actualInstallation = getInfobaseAccessManager().getInstallation(project, issueDescriptor.getInfobase());
-		RuntimeInstallation thickClientComponent = actualInstallation.get(new String[]{IRuntimeComponentTypes.THICK_CLIENT});
-		version = thickClientComponent.getVersion();
-		thickClient = getRuntimeComponentManager().getComponentAndExecutor(thickClientComponent, IRuntimeComponentTypes.THICK_CLIENT);
+		InfobaseReference infobase = issueDescriptor.getInfobase();
+		IResolvableRuntimeInstallation actualInstallation = getResolvableRuntimeInstallationManager().resolveByProjectAndInfobase(
+				RuntimeInstallations.ENTERPRISE_PLATFORM, project, infobase, InfobaseAccessType.UPDATE);
+		RuntimeInstallation installation = actualInstallation.resolve(List.of(IRuntimeComponentTypes.THICK_CLIENT), infobase.getAppArch());
+		version = installation.getVersion();
+		thickClient = getRuntimeComponentManager().resolveExecutor(
+				ILaunchableRuntimeComponent.class, IDesignerSessionThickClientLauncher.class, installation, IRuntimeComponentTypes.THICK_CLIENT);
+		
 		extensionName = getExtensionName();
 	}
 	
@@ -81,28 +90,34 @@ public class Designer {
 		return v8ProjectManagerSupplier.get();
 	}
 	
-	private IConfigDumpInfoStore getProjectSettingsStore() {
-		return projectSettingsStoreSupplier.get();
+	private IResolvableRuntimeInstallationManager getResolvableRuntimeInstallationManager() {
+		return resolvableRuntimeInstallationManagerSupplier.get();
+	}
+	
+	private IInfobaseSynchronizationStateManager getInfobaseSynchronizationStateManager() {
+		return infobaseSynchronizationStateManagerSupplier.get();
 	}
 	
 	public void dispose() {
 		infobaseAccessManagerSupplier.close();
 		runtimeComponentManagerSupplier.close();
 		v8ProjectManagerSupplier.close();
-		projectSettingsStoreSupplier.close();
+		resolvableRuntimeInstallationManagerSupplier.close();
+		infobaseSynchronizationStateManagerSupplier.close();
 	}
+	
 	public Version getVersion() {
 		return version;
 	}
 	
 	public void closeDesignerSession() throws RuntimeExecutionException {
-		thickClient.second.closeDesignerSession(thickClient.first, issueDescriptor.getInfobase(), null);
+		thickClient.getExecutor().closeDesignerSession(thickClient.getComponent(), issueDescriptor.getInfobase(), null);
 	}
 
 	private RuntimeExecutionCommandBuilder getCommandBuilder(Path log) throws CoreException {
 		InfobaseReference infobase = issueDescriptor.getInfobase();
-		IInfobaseAccessSettings settings = getInfobaseAccessManager().getSettings(infobase);
-		File launchFile = thickClient.first.getFile();
+		IInfobaseAccessSettings settings = getInfobaseAccessManager().resolveSettings(infobase);
+		File launchFile = thickClient.getComponent().getFile();
 		
 		RuntimeExecutionCommandBuilder result = new RuntimeExecutionCommandBuilder(launchFile, RuntimeExecutionCommandBuilder.ThickClientMode.DESIGNER)
 				.forInfobase(infobase, false).userName(settings.userName()).userPassword(settings.password())
@@ -111,31 +126,11 @@ public class Designer {
 		return result;
 	}
 
-	public boolean configDumpInfoOnly() throws CoreException, IOException, InterruptedException {
-		if (!extensionName.isEmpty()) {
-			return false;
-		}
-		
-		Path log = rootDirectory.resolve("cdiOnlyOut.txt");
-		
-		RuntimeExecutionCommandBuilder command = getCommandBuilder(log)
-				.dumpConfigurationToXml(rootDirectory).additionalParameters("-configDumpInfoOnly");
-		
-		Process process = command.start();
-		int returnCode = process.waitFor();
-		if (returnCode != 0) {
-			IStatus status = StorageUiPlugin.createErrorStatus(Files.readString(log));
-			throw new CoreException(status);
-		}
-		
-		return true;
-	}
-
-	public void loadConfigurationFromXml(Path sourceFolder, Path fileList) throws CoreException, IOException, InterruptedException {
+	public void loadConfigurationFromXml(Path sourceFolder, Path fileList) throws CoreException, IOException, InterruptedException, RuntimeExecutionException {
 		Path log = rootDirectory.resolve("loadCfgOut.txt");
 		
 		RuntimeExecutionCommandBuilder command = getCommandBuilder(log)
-			.loadConfigurationFromXml(sourceFolder).fileList(fileList).updateConfigDumpInfo();
+			.importXmlToInfobase(sourceFolder).fileList(fileList).updateConfigDumpInfo();
 		
 		if (!extensionName.isEmpty()) {
 			command.forExtension(extensionName);
@@ -145,13 +140,11 @@ public class Designer {
 		int returnCode = process.waitFor();
 		if (returnCode == 0) {
 			// актуализация ConfigDumpInfo.xml в ветке хранилища
-			Path configDumpInfoFile = sourceFolder.resolve(IConfigDumpInfoStore.CONFIG_DUMP_INFO);
-			InfobaseAssociationContext context = InfobaseAssociationContext.of(issueDescriptor.getBranch().getName());
-			getProjectSettingsStore().storeConfigDumpInfo(
-					project,
-					issueDescriptor.getInfobase(),
-					configDumpInfoFile,
-					context);
+			IUpdateProjectFlow updateProjectFlow = getInfobaseSynchronizationStateManager().startUpdateProjectFlow(
+					getV8ProjectManager().getProject(project).getDtProject(), issueDescriptor.getInfobase());
+			updateProjectFlow.setActualConfigDumpInfo(sourceFolder); // передаем именно каталог, где лежит файл ConfigDumpInfo.xml
+			// updateProjectFlow.setActualGenerationId(retrieveGenerationId()); для нас необязательно
+			updateProjectFlow.finish();
 		}
 		else {
 			IStatus status = StorageUiPlugin.createErrorStatus(Files.readString(log));
@@ -293,4 +286,23 @@ public class Designer {
 		
 		return result;
 	}
+
+	public String retrieveGenerationId() throws CoreException, IOException, InterruptedException {
+		Path log = rootDirectory.resolve("generationIdOut.txt");
+		
+		RuntimeExecutionCommandBuilder command = getCommandBuilder(log).additionalParameters("/GetConfigGenerationID");
+		
+		Process process = command.start();
+		int returnCode = process.waitFor();
+		if (returnCode != 0) {
+			IStatus status = StorageUiPlugin.createErrorStatus(Files.readString(log));
+			throw new CoreException(status);
+		}
+		
+		String result = Files.readString(log);
+		result = result.replaceAll("\r\n", "");
+		
+		return result;
+	}
+
 }

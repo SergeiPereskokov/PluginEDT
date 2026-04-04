@@ -267,7 +267,7 @@ public class ExportHandler implements IHandler {
 			String oldPath = entry.getOldPath();
 			String newPath = entry.getNewPath();
 			String sourceFile;
-			if (oldPath == DiffEntry.DEV_NULL && newPath.endsWith(".aindex")) {
+			if (oldPath == DiffEntry.DEV_NULL) {
 				sourceFile = newPath;
 			}
 			else {
