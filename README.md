@@ -11,7 +11,7 @@
 | **Ветка PR #3 port** | `port/pr3-pull-logging` |
 | **База** | upstream v0.4.0 + патчи форка |
 
-План порта: [plugin-edt-port-pr3-plan.md](https://github.com/SergeiPereskokov/PluginEDT/blob/port/pr3-pull-logging/.cursor/plugin-edt-port-pr3-plan.md) (локально в KICB workspace). Upstream draft PR: https://github.com/ZigRinat85/PluginEDT/pull/3
+План порта: workspace KICB `.cursor/plugin-edt-port-pr3-plan.md`. Upstream draft PR: https://github.com/ZigRinat85/PluginEDT/pull/3
 
 ---
 
