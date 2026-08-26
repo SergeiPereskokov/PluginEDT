@@ -1,0 +1,148 @@
+<?xml version="1.0" encoding="utf-8"?>
+<?metadataRepository version='1.2.0'?>
+<repository name="PluginEDT fork v0.4.0-fork.1" type="org.eclipse.equinox.internal.p2.metadata.repository.LocalMetadataRepository" version="1">
+  <properties size="2">
+    <property name="p2.timestamp" value="1787723925981" />
+    <property name="p2.compressed" value="true" />
+  </properties>
+  <units size="3">
+    <unit id="dev.zigr.dt.team.ui.storage.feature.feature.jar" version="0.4.0.202604042146">
+      <properties size="3">
+        <property name="org.eclipse.equinox.p2.name" value="Configuration repository" />
+        <property name="org.eclipse.equinox.p2.description" value="Плагин предоставляет возможность работать EDT с хранилищем конфигурации 1С&#xA;&#xA;---&#xA;Новое в версии 0.4.0:&#xA;- Добавлена поддержка EDT 2025.2 (ранние версии EDT не поддерживаются)&#xA;- Исправлены мелкие ошибки&#xA;&#xA;---&#xA;Новое в версии 0.3.0:&#xA;- Добавлена поддержка когда конфигурация и ее расширения в одном&#xA;репозитории (ранее только в разных репозиториях).&#xA;- Настройки плагина теперь хранятся в разрезе &quot;Проект&quot; (ранее&#xA;было &quot;ИБ + Проект&quot;)&#xA;- Команда вызова формы настроек перемещена в контекстное меню&#xA;Проекта на панели &quot;Разработка&quot; (ранее располагалась в контекстном&#xA;меню Задачи). Описание панели &quot;Разработка&quot; см. https://its.1c.ru/db/edtdoc#content:10229:hdoc&#xA;- Команда вызова формы настроек добавлена в контекстное меню&#xA;Проекта на панели &quot;Навигатор&quot;&#xA;&#xA;---&#xA;Новое в версии 0.2.0:&#xA;- Добавлена поддержка расширений конфигураций&#xA;- Исправлена ошибка помещения дополнительных индексов из EDT&#xA;в ИБ&#xA;- Устранены мелкие недочеты и немного ускорена операция помещения&#xA;- Настройки плагина теперь хранятся в разрезе &quot;ИБ + Проект&quot; (ранее&#xA;было &quot;ИБ&quot;)&#xA;- Добавлена новая настройка &quot;Помещать даже если конфигурации&#xA;различаются&quot;" />
+        <property name="org.eclipse.equinox.p2.provider" value="Ziganshin Rinat" />
+      </properties>
+      <provides size="3">
+        <provided namespace="org.eclipse.equinox.p2.iu" name="dev.zigr.dt.team.ui.storage.feature.feature.jar" version="0.4.0.202604042146" />
+        <provided namespace="org.eclipse.equinox.p2.eclipse.type" name="feature" version="1.0.0" />
+        <provided namespace="org.eclipse.update.feature" name="dev.zigr.dt.team.ui.storage.feature" version="0.4.0.202604042146" />
+      </provides>
+      <filter>
+        (org.eclipse.update.install.features=true)
+      </filter>
+      <artifacts size="1">
+        <artifact classifier="org.eclipse.update.feature" id="dev.zigr.dt.team.ui.storage.feature" version="0.4.0.202604042146" />
+      </artifacts>
+      <touchpoint id="org.eclipse.equinox.p2.osgi" version="1.0.0" />
+      <touchpointData size="1">
+        <instructions size="1">
+          <instruction key="zipped">
+            true
+          </instruction>
+        </instructions>
+      </touchpointData>
+      <licenses size="1">
+        <license uri="" url="">
+          Eclipse Public License 2.0
+        </license>
+      </licenses>
+      <copyright>
+        Copyright (C) 2025, Ziganshin Rinat.
+This program and the accompanying materials are made
+available under the terms of the Eclipse Public License 2.0
+which is available at https://www.eclipse.org/legal/epl-2.0/
+SPDX-License-Identifier: EPL-2.0
+      </copyright>
+    </unit>
+    <unit id="dev.zigr.dt.team.ui.storage.feature.feature.group" version="0.4.0.202604042146" singleton="false">
+      <update id="dev.zigr.dt.team.ui.storage.feature.feature.group" range="[0.0.0,0.4.0.202604042146)" severity="0" />
+      <properties size="4">
+        <property name="org.eclipse.equinox.p2.name" value="Configuration repository" />
+        <property name="org.eclipse.equinox.p2.description" value="Плагин предоставляет возможность работать EDT с хранилищем конфигурации 1С&#xA;&#xA;---&#xA;Новое в версии 0.4.0:&#xA;- Добавлена поддержка EDT 2025.2 (ранние версии EDT не поддерживаются)&#xA;- Исправлены мелкие ошибки&#xA;&#xA;---&#xA;Новое в версии 0.3.0:&#xA;- Добавлена поддержка когда конфигурация и ее расширения в одном&#xA;репозитории (ранее только в разных репозиториях).&#xA;- Настройки плагина теперь хранятся в разрезе &quot;Проект&quot; (ранее&#xA;было &quot;ИБ + Проект&quot;)&#xA;- Команда вызова формы настроек перемещена в контекстное меню&#xA;Проекта на панели &quot;Разработка&quot; (ранее располагалась в контекстном&#xA;меню Задачи). Описание панели &quot;Разработка&quot; см. https://its.1c.ru/db/edtdoc#content:10229:hdoc&#xA;- Команда вызова формы настроек добавлена в контекстное меню&#xA;Проекта на панели &quot;Навигатор&quot;&#xA;&#xA;---&#xA;Новое в версии 0.2.0:&#xA;- Добавлена поддержка расширений конфигураций&#xA;- Исправлена ошибка помещения дополнительных индексов из EDT&#xA;в ИБ&#xA;- Устранены мелкие недочеты и немного ускорена операция помещения&#xA;- Настройки плагина теперь хранятся в разрезе &quot;ИБ + Проект&quot; (ранее&#xA;было &quot;ИБ&quot;)&#xA;- Добавлена новая настройка &quot;Помещать даже если конфигурации&#xA;различаются&quot;" />
+        <property name="org.eclipse.equinox.p2.provider" value="Ziganshin Rinat" />
+        <property name="org.eclipse.equinox.p2.type.group" value="true" />
+      </properties>
+      <provides size="1">
+        <provided namespace="org.eclipse.equinox.p2.iu" name="dev.zigr.dt.team.ui.storage.feature.feature.group" version="0.4.0.202604042146" />
+      </provides>
+      <requires size="2">
+        <required namespace="org.eclipse.equinox.p2.iu" name="dev.zigr.dt.team.ui.storage" range="[0.4.0.202604042146,0.4.0.202604042146]" />
+        <required namespace="org.eclipse.equinox.p2.iu" name="dev.zigr.dt.team.ui.storage.feature.feature.jar" range="[0.4.0.202604042146,0.4.0.202604042146]">
+          <filter>
+            (org.eclipse.update.install.features=true)
+          </filter>
+        </required>
+      </requires>
+      <touchpoint id="null" version="0.0.0" />
+      <licenses size="1">
+        <license uri="" url="">
+          Eclipse Public License 2.0
+        </license>
+      </licenses>
+      <copyright>
+        Copyright (C) 2025, Ziganshin Rinat.
+This program and the accompanying materials are made
+available under the terms of the Eclipse Public License 2.0
+which is available at https://www.eclipse.org/legal/epl-2.0/
+SPDX-License-Identifier: EPL-2.0
+      </copyright>
+    </unit>
+    <unit id="dev.zigr.dt.team.ui.storage" version="0.4.0.202604042146" generation="2">
+      <update id="dev.zigr.dt.team.ui.storage" range="[0.0.0,0.4.0.202604042146)" severity="0" />
+      <properties size="2">
+        <property name="org.eclipse.equinox.p2.name" value="Configuration repository" />
+        <property name="org.eclipse.equinox.p2.provider" value="Ziganshin Rinat" />
+      </properties>
+      <provides size="4">
+        <provided namespace="org.eclipse.equinox.p2.iu" name="dev.zigr.dt.team.ui.storage" version="0.4.0.202604042146" />
+        <provided namespace="osgi.bundle" name="dev.zigr.dt.team.ui.storage" version="0.4.0.202604042146" />
+        <provided namespace="osgi.identity" name="dev.zigr.dt.team.ui.storage" version="0.4.0.202604042146">
+          <properties size="1">
+            <property name="type" value="osgi.bundle" />
+          </properties>
+        </provided>
+        <provided namespace="org.eclipse.equinox.p2.eclipse.type" name="bundle" version="1.0.0" />
+      </provides>
+      <requires size="29">
+        <required namespace="osgi.bundle" name="org.eclipse.ui" range="0.0.0" />
+        <required namespace="osgi.bundle" name="org.eclipse.core.runtime" range="0.0.0" />
+        <required namespace="osgi.bundle" name="com.google.inject" range="0.0.0" />
+        <required namespace="osgi.bundle" name="org.eclipse.equinox.security" range="0.0.0" />
+        <required namespace="osgi.bundle" name="org.eclipse.jgit" range="0.0.0" />
+        <required namespace="osgi.bundle" name="org.eclipse.xtext" range="0.0.0" />
+        <required namespace="osgi.bundle" name="org.eclipse.core.resources" range="3.20.0" />
+        <required namespace="java.package" name="com._1c.g5.v8.activitytracking.core" range="1.0.0" />
+        <required namespace="java.package" name="com._1c.g5.v8.bm.core" range="9.1.0" />
+        <required namespace="java.package" name="com._1c.g5.v8.dt.common" range="6.10.100" />
+        <required namespace="java.package" name="com._1c.g5.v8.dt.compare.core" range="21.1.0" />
+        <required namespace="java.package" name="com._1c.g5.v8.dt.core.filesystem" range="6.0.0" />
+        <required namespace="java.package" name="com._1c.g5.v8.dt.core.platform" range="11.2.0" />
+        <required namespace="java.package" name="com._1c.g5.v8.dt.export" range="7.2.300" />
+        <required namespace="java.package" name="com._1c.g5.v8.dt.metadata.mdclass" range="10.0.0" />
+        <required namespace="java.package" name="com._1c.g5.v8.dt.platform.services.core.infobases" range="13.0.0" />
+        <required namespace="java.package" name="com._1c.g5.v8.dt.platform.services.core.infobases.sync" range="9.0.0" />
+        <required namespace="java.package" name="com._1c.g5.v8.dt.platform.services.core.infobases.sync.v2" range="1.0.0" />
+        <required namespace="java.package" name="com._1c.g5.v8.dt.platform.services.core.runtimes" range="10.0.0" />
+        <required namespace="java.package" name="com._1c.g5.v8.dt.platform.services.core.runtimes.environments" range="4.0.0" />
+        <required namespace="java.package" name="com._1c.g5.v8.dt.platform.services.core.runtimes.execution" range="13.0.0" />
+        <required namespace="java.package" name="com._1c.g5.v8.dt.platform.services.core.runtimes.execution.impl" range="10.0.0" />
+        <required namespace="java.package" name="com._1c.g5.v8.dt.platform.services.model" range="6.0.800" />
+        <required namespace="java.package" name="com._1c.g5.v8.dt.platform.version" range="2.19.0" />
+        <required namespace="java.package" name="com._1c.g5.v8.dt.team" range="1.0.1200" />
+        <required namespace="java.package" name="com._1c.g5.v8.dt.team.git.infobases" range="1.0.2200" />
+        <required namespace="java.package" name="com._1c.g5.wiring" range="2.4.0" />
+        <required namespace="java.package" name="com._1c.g5.wiring.binder" range="1.2.0" />
+        <requiredProperties namespace="osgi.ee" match="(&amp;(osgi.ee=JavaSE)(version=17))">
+          <description>
+            dev.zigr.dt.team.ui.storage
+          </description>
+        </requiredProperties>
+      </requires>
+      <artifacts size="1">
+        <artifact classifier="osgi.bundle" id="dev.zigr.dt.team.ui.storage" version="0.4.0.202604042146" />
+      </artifacts>
+      <touchpoint id="org.eclipse.equinox.p2.osgi" version="1.0.0" />
+      <touchpointData size="1">
+        <instructions size="2">
+          <instruction key="zipped">
+            true
+          </instruction>
+          <instruction key="manifest">
+            Bundle-SymbolicName: dev.zigr.dt.team.ui.storage;singleton:=true
+Bundle-Version: 0.4.0.202604042146
+          </instruction>
+        </instructions>
+      </touchpointData>
+    </unit>
+  </units>
+</repository>

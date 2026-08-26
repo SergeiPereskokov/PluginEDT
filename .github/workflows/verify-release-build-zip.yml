@@ -1,0 +1,45 @@
+name: verify-release-build-zip
+# Страховка от регрессии fork.1: plugin jar без OSGi MANIFEST
+# (голый `jar cf` → Created-By-only, Equinox не стартует бандл).
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: Release tag containing build.zip
+        required: true
+        type: string
+
+jobs:
+  verify-osgi-manifest:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download build.zip
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          TAG="${{ github.event.release.tag_name || inputs.tag }}"
+          gh release download "$TAG" --repo "${{ github.repository }}" --pattern "build.zip"
+      - name: Assert plugin jar has OSGi MANIFEST
+        run: |
+          set -euo pipefail
+          unzip -l build.zip
+          unzip -p build.zip 'plugins/dev.zigr.dt.team.ui.storage_*.jar' > plugin.jar
+          unzip -p plugin.jar META-INF/MANIFEST.MF > mf.txt
+          echo "===== META-INF/MANIFEST.MF ====="
+          cat mf.txt
+          echo "===== END ====="
+          BYTES=$(wc -c < mf.txt)
+          if [ "$BYTES" -lt 400 ]; then
+            echo "FAIL: MANIFEST ${BYTES} bytes (naked jar cf / no OSGi headers)"
+            exit 1
+          fi
+          grep -q 'Bundle-SymbolicName: dev.zigr.dt.team.ui.storage' mf.txt
+          grep -q 'Bundle-ManifestVersion: 2' mf.txt
+          grep -q 'Bundle-Activator:' mf.txt
+          grep -q 'Require-Bundle:' mf.txt
+          unzip -l plugin.jar | grep -q 'plugin.xml'
+          unzip -l plugin.jar | grep -q 'ExportHandler.class'
+          echo "OK OSGi MANIFEST ($BYTES bytes)"
