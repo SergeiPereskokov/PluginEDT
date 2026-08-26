@@ -33,3 +33,32 @@ https://infostart.ru/1c/articles/2442956/
 было "ИБ")
 - Добавлена новая настройка "Помещать даже если конфигурации
 различаются"
+
+## Изменения форка (SergeiPereskokov)
+
+Ветка: `fix/storage-feedback`. База: upstream [ZigRinat85/PluginEDT](https://github.com/ZigRinat85/PluginEDT) v0.4.0.
+
+### Что ломалось в upstream
+
+1. **Single-project git layout** — diff с путями `src/...` (репозиторий внутри проекта EDT) полностью игнорировался: плагин ждал только `ИмяПроекта/src/...`. В итоге «Поместить в хранилище» находило 0 объектов.
+2. **EDT 2026.2 API** — после LoadCfg падение `NoSuchMethodError`: `IUpdateProjectFlow.setActualConfigDumpInfo(Path)` удалён, нужен `loadActualConfigDumpInfo(Path)`.
+3. **Только загрузка в ИБ** — захват + LoadCfg без UpdateDBCfg и без `/ConfigurationRepositoryCommit`: изменения оставались в основной конфигурации ИБ, в хранилище 1С не попадали.
+4. **UI freeze** — длинный цикл на UI-thread без прогресса; диалоги с worker-thread без `syncExec`.
+
+### Что починили
+
+**ExportHandler**
+- Layout A (`Project/src/...`) и Layout B (`src/...` + `resolveProjectName` по work tree).
+- `toWorkspacePath` для FQN-конвертера EDT.
+- `ProgressMonitorDialog` + `subTask` по шагам (diff, захват, CompareCfg, export, LoadCfg, UpdateDBCfg, commit).
+- UI-диалоги через `Display.syncExec`.
+- После LoadCfg: `updateDatabaseConfiguration` + `storeObjects` с комментарием `PluginEDT: {ветка}`.
+
+**Designer**
+- `loadActualConfigDumpInfo` вместо `setActualConfigDumpInfo` (EDT 2026.2+).
+- `updateDatabaseConfiguration` (`/UpdateDBCfg`).
+- `storeObjects` (`/ConfigurationRepositoryCommit`).
+- Перегрузка методов с `IProgressMonitor` + `subTask` / лог.
+
+Сборки stubs/out/class в `.p2` в git не входят — только исходники.
+
