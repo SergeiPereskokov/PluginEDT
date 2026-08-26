@@ -71,17 +71,27 @@ https://github.com/SergeiPereskokov/PluginEDT/compare/master...fix/storage-feedb
 
 ---
 
-## Краткая установка
+## Установка
 
-1. Собрать/взять `dev.zigr.dt.team.ui.storage` из этого репозитория (ветка `fix/storage-feedback` или актуальный `master` форка).
-2. Установить плагин в EDT (dropins / update site — как для upstream PluginEDT).
-3. В EDT: настройки хранилища на проекте → команда «Поместить в хранилище» на дескрипторе ветки git↔ИБ.
-4. После смены class/плагина — рестарт EDT с `-clean` при странном поведении sync.
+Готовая сборка форка (p2 archive, как у upstream):
+**https://github.com/SergeiPereskokov/PluginEDT/releases/download/v0.4.0-fork.1/build.zip**
+Tag: `v0.4.0-fork.1` (bundle version внутри = `0.4.0.202604042146`, патчи форка).
 
-Готовая сборка upstream (для сравнения, без патчей форка):  
+### Через «Справка → Установить новое ПО» (рекомендуется)
+
+1. Скачать `build.zip` с [Release v0.4.0-fork.1](https://github.com/SergeiPereskokov/PluginEDT/releases/tag/v0.4.0-fork.1).
+2. EDT → **Справка → Установить новое ПО…**.
+3. **Add…** → **Archive…** → выбрать скачанный `build.zip` → Next.
+4. Отметить feature **Configuration repository** → Finish → перезапустить EDT (при странном sync — с `-clean`).
+
+### После установки
+
+В EDT: настройки хранилища на проекте → команда «Поместить в хранилище» на дескрипторе ветки git↔ИБ.
+
+Upstream без патчей форка (для сравнения):
 https://github.com/ZigRinat85/PluginEDT/releases/download/v0.4.0/build.zip
 
-Статья автора upstream:  
+Статья автора upstream:
 https://infostart.ru/1c/articles/2442956/
 
 ---
