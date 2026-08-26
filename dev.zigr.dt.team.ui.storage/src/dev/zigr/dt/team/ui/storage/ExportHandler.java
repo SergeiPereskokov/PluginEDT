@@ -190,78 +190,80 @@ public class ExportHandler implements IHandler {
 		
 		setProgress(monitor, MessageFormat.format("Проект {0}: подключение к платформе / ИБ…", projectName));
 		Designer designer = new Designer(issueDescriptor, projectName, rootDirectory);
-		
-		setProgress(monitor, MessageFormat.format("Проект {0}: закрытие сессии конфигуратора…", projectName));
-		designer.closeDesignerSession(monitor);
-		
-		setProgress(monitor, MessageFormat.format("Проект {0}: определение объектов для захвата…", projectName));
-		Map<QualifiedName, Boolean> lockObjects = getLockObjects(projectName, diff);
-		if (lockObjects.isEmpty()) {
-			IStatus status = StorageUiPlugin.createErrorStatus("Не удалось определить объекты для захвата");
-			throw new CoreException(status);
-		}
-		
-		setProgress(monitor, MessageFormat.format(
-				"Проект {0}: захват объектов в хранилище… ({1})", projectName, lockObjects.size()));
-		designer.lockObjects(lockObjects, monitor);
-		
-		setProgress(monitor, MessageFormat.format("Проект {0}: сравнение с конфигурацией БД…", projectName));
-		if (!designer.isConfigurationSame(monitor)) {
-			if (storageSettings.getPushIfConfigurationChanged()) {
-				int answer = askContinueIfConfigurationChanged(projectName);
-				if (answer == SWT.NO) {
-					String message = MessageFormat.format(
-							"Операция помещения в хранилище отменена пользователем. ИБ={0}. Проект={1}",
-							issueDescriptor.getInfobase().getName(), projectName);
-					StorageUiPlugin.logInfo(message);
-					return false;
-				}
-			} else {
-				String textMessage = textMessageIfConfigurationChanged(projectName);
-				IStatus status = StorageUiPlugin.createErrorStatus(textMessage);
+		try {
+			setProgress(monitor, MessageFormat.format("Проект {0}: закрытие сессии конфигуратора…", projectName));
+			designer.closeDesignerSession(monitor);
+			
+			setProgress(monitor, MessageFormat.format("Проект {0}: определение объектов для захвата…", projectName));
+			Map<QualifiedName, Boolean> lockObjects = getLockObjects(projectName, diff);
+			if (lockObjects.isEmpty()) {
+				IStatus status = StorageUiPlugin.createErrorStatus("Не удалось определить объекты для захвата");
 				throw new CoreException(status);
 			}
-		}
-		
-		setProgress(monitor, MessageFormat.format("Проект {0}: выгрузка объектов EDT в XML…", projectName));
-		EObject[] topObjects = getTopObjects(projectName, diff);
-		IExportOperation exportOperation = exportOperationFactory.createExportOperation
-				(exportDirectory, designer.getVersion(), new IncrementalExportStrategy(), topObjects);
-		SubMonitor exportMonitor = SubMonitor.convert(monitor, "Выгрузка объектов EDT в XML…", 100);
-		IStatus status = exportOperation.run(exportMonitor);
-		if (status.getSeverity() == 4) { 
-			throw new CoreException(status);
-		}
-		
-		setProgress(monitor, MessageFormat.format("Проект {0}: подготовка списка файлов к загрузке…", projectName));
-		V8FileBuilder v8FileBuilder = new V8FileBuilder(exportDirectory, projectName);
-		v8FileBuilder.setSourceFiles(diff);
-		Set<Path> exportFiles = v8FileBuilder.getExportFiles();
-		setProgress(monitor, MessageFormat.format(
-				"Проект {0}: подготовка списка файлов… ({1})", projectName, exportFiles.size()));
-		Path listFiles = rootDirectory.resolve("listFiles.txt");
-		try (BufferedWriter writer = new BufferedWriter(new FileWriter(listFiles.toString(), StandardCharsets.UTF_8))){
-			for (Path exportFile : exportFiles) {
-				writer.append(exportFile.toString()+System.lineSeparator());
+			
+			setProgress(monitor, MessageFormat.format(
+					"Проект {0}: захват объектов в хранилище… ({1})", projectName, lockObjects.size()));
+			designer.lockObjects(lockObjects, monitor);
+			
+			setProgress(monitor, MessageFormat.format("Проект {0}: сравнение с конфигурацией БД…", projectName));
+			if (!designer.isConfigurationSame(monitor)) {
+				if (storageSettings.getPushIfConfigurationChanged()) {
+					int answer = askContinueIfConfigurationChanged(projectName);
+					if (answer == SWT.NO) {
+						String message = MessageFormat.format(
+								"Операция помещения в хранилище отменена пользователем. ИБ={0}. Проект={1}",
+								issueDescriptor.getInfobase().getName(), projectName);
+						StorageUiPlugin.logInfo(message);
+						return false;
+					}
+				} else {
+					String textMessage = textMessageIfConfigurationChanged(projectName);
+					IStatus status = StorageUiPlugin.createErrorStatus(textMessage);
+					throw new CoreException(status);
+				}
 			}
-		} catch (IOException e) {
-			throw e;
+			
+			setProgress(monitor, MessageFormat.format("Проект {0}: выгрузка объектов EDT в XML…", projectName));
+			EObject[] topObjects = getTopObjects(projectName, diff);
+			IExportOperation exportOperation = exportOperationFactory.createExportOperation
+					(exportDirectory, designer.getVersion(), new IncrementalExportStrategy(), topObjects);
+			SubMonitor exportMonitor = SubMonitor.convert(monitor, "Выгрузка объектов EDT в XML…", 100);
+			IStatus status = exportOperation.run(exportMonitor);
+			if (status.getSeverity() == 4) { 
+				throw new CoreException(status);
+			}
+			
+			setProgress(monitor, MessageFormat.format("Проект {0}: подготовка списка файлов к загрузке…", projectName));
+			V8FileBuilder v8FileBuilder = new V8FileBuilder(exportDirectory, projectName);
+			v8FileBuilder.setSourceFiles(diff);
+			Set<Path> exportFiles = v8FileBuilder.getExportFiles();
+			setProgress(monitor, MessageFormat.format(
+					"Проект {0}: подготовка списка файлов… ({1})", projectName, exportFiles.size()));
+			Path listFiles = rootDirectory.resolve("listFiles.txt");
+			try (BufferedWriter writer = new BufferedWriter(new FileWriter(listFiles.toString(), StandardCharsets.UTF_8))){
+				for (Path exportFile : exportFiles) {
+					writer.append(exportFile.toString()+System.lineSeparator());
+				}
+			} catch (IOException e) {
+				throw e;
+			}
+			
+			setProgress(monitor, MessageFormat.format("Проект {0}: загрузка XML в информационную базу…", projectName));
+			designer.loadConfigurationFromXml(exportDirectory, listFiles, monitor);
+
+			// После LoadCfg: Main≠DB. Статья п.8 — UpdateDBCfg, затем Поместить в хранилище.
+			setProgress(monitor, MessageFormat.format("Проект {0}: обновление конфигурации БД…", projectName));
+			designer.updateDatabaseConfiguration(monitor);
+
+			String storeComment = buildStoreComment();
+			setProgress(monitor, MessageFormat.format(
+					"Проект {0}: помещение в хранилище… ({1})", projectName, lockObjects.size()));
+			designer.storeObjects(lockObjects, storeComment, monitor);
+			
+			return true;
+		} finally {
+			designer.dispose();
 		}
-		
-		setProgress(monitor, MessageFormat.format("Проект {0}: загрузка XML в информационную базу…", projectName));
-		designer.loadConfigurationFromXml(exportDirectory, listFiles, monitor);
-
-		// После LoadCfg: Main≠DB. Статья п.8 — UpdateDBCfg, затем Поместить в хранилище.
-		setProgress(monitor, MessageFormat.format("Проект {0}: обновление конфигурации БД…", projectName));
-		designer.updateDatabaseConfiguration(monitor);
-
-		String storeComment = buildStoreComment();
-		setProgress(monitor, MessageFormat.format(
-				"Проект {0}: помещение в хранилище… ({1})", projectName, lockObjects.size()));
-		designer.storeObjects(lockObjects, storeComment, monitor);
-		
-		designer.dispose();
-		return true;
 	}
 
 	private String buildStoreComment() {

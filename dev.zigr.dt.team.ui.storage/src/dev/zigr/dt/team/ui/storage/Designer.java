@@ -158,9 +158,22 @@ public class Designer {
 			StorageUiPlugin.logInfo("Актуализация ConfigDumpInfo…");
 			IUpdateProjectFlow updateProjectFlow = getInfobaseSynchronizationStateManager().startUpdateProjectFlow(
 					getV8ProjectManager().getProject(project).getDtProject(), issueDescriptor.getInfobase());
-			updateProjectFlow.loadActualConfigDumpInfo(sourceFolder); // каталог с ConfigDumpInfo.xml
-			// updateProjectFlow.setActualGenerationId(retrieveGenerationId()); для нас необязательно
-			updateProjectFlow.finish();
+			boolean finished = false;
+			try {
+				updateProjectFlow.loadActualConfigDumpInfo(sourceFolder); // каталог с ConfigDumpInfo.xml
+				// updateProjectFlow.setActualGenerationId(retrieveGenerationId()); для нас необязательно
+				updateProjectFlow.finish();
+				finished = true;
+			} finally {
+				// без finish() sync flow залипает; при ошибке — best-effort cancel
+				if (!finished) {
+					try {
+						updateProjectFlow.cancel();
+					} catch (Exception ignore) {
+						// sticky sync: best-effort cancel
+					}
+				}
+			}
 		}
 		else {
 			IStatus status = StorageUiPlugin.createErrorStatus(Files.readString(log));
