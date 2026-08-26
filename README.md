@@ -1,125 +1,131 @@
-# PluginEDT (fork) — помещение в хранилище 1С из EDT
+# PluginEDT (fork) — помещение / получение из хранилища 1С из EDT
 
-Форк плагина **[ZigRinat85/PluginEDT](https://github.com/ZigRinat85/PluginEDT)** — плагин **storage** (`dev.zigr.dt.team.ui.storage`): команда «Поместить в хранилище» из EDT в хранилище конфигурации 1С.
+Форк плагина **[ZigRinat85/PluginEDT](https://github.com/ZigRinat85/PluginEDT)** — плагин **storage** (`dev.zigr.dt.team.ui.storage`): команды «Поместить в хранилище» / «Получить из хранилища» из EDT.
 
-Это **не** pack/сборка дистрибутива — только доработки сценария помещения.
+Это **не** pack/сборка дистрибутива — только доработки сценария работы с хранилищем.
 
 | | |
 |---|---|
 | **Upstream** | https://github.com/ZigRinat85/PluginEDT |
 | **Этот fork** | https://github.com/SergeiPereskokov/PluginEDT |
-| **Рабочая ветка доработок** | `fix/storage-feedback` |
-| **База** | upstream v0.4.0 |
+| **Ветка PR #3 port** | `port/pr3-pull-logging` |
+| **База** | upstream v0.4.0 + патчи форка |
+
+План порта: [plugin-edt-port-pr3-plan.md](https://github.com/SergeiPereskokov/PluginEDT/blob/port/pr3-pull-logging/.cursor/plugin-edt-port-pr3-plan.md) (локально в KICB workspace). Upstream draft PR: https://github.com/ZigRinat85/PluginEDT/pull/3
 
 ---
 
 ## Зачем форк
 
-Upstream 0.4.0 на типовом layout «один EDT-проект = один git» и на EDT **2026.2** ломается или обрывает сценарий.
+Upstream 0.4.0 на типовом layout «один EDT-проект = один git» и на EDT **2026.2** ломается или обрывает сценарий; нет команды «Получить из хранилища».
 
 | Боль | Что происходило | Решение в форке |
 |------|-----------------|-----------------|
-| Single-project git | Diff с путями `src/...` игнорировался (ждали только `ИмяПроекта/src/...`) → 0 объектов | Layout A + B, `resolveProjectName`, `toWorkspacePath` |
+| Single-project git | Diff с путями `src/...` игнорировался (ждали только `ИмяПроекта/src/...`) → 0 объектов | Layout A + B + nested `…/src/…`, `resolveProjectName`, `toWorkspacePath` |
 | EDT 2026.2 API | После LoadCfg: `NoSuchMethodError` на `setActualConfigDumpInfo(Path)` | `loadActualConfigDumpInfo(Path)` |
 | Залипший sync ИБ | При ошибке после `startUpdateProjectFlow` flow без `finish()`/`cancel()` | `try/finally` + `cancel()` |
 | «Поместили» только в ИБ | Захват + LoadCfg без UpdateDBCfg и без commit в хранилище | `/UpdateDBCfg` + `/ConfigurationRepositoryCommit` |
 | UI freeze | Долгий цикл на UI-thread, диалоги с worker без `syncExec` | `ProgressMonitorDialog` + `subTask` + `syncExec` |
+| Нет pull | Нельзя получить версии из хранилища в EDT | Команда «Получить из хранилища» (`UpdateCfg` → `UpdateDBCfg` → штатный EDT sync) |
+| Нет журнала операции | Ошибки Designer плохо диагностируются | `OperationLogger` → файл в state location плагина |
+| Жёсткий комментарий | Только `PluginEDT: {ветка}` | Шаблон с placeholders в настройках |
+
+---
+
+## Команды UI (меню «Хранилище конфигурации»)
+
+| Команда | Где | Назначение |
+|---------|-----|------------|
+| **Поместить в хранилище** | Development view, дескриптор ветки git↔ИБ | Push: lock → CompareCfg → export EDT → LoadCfg → UpdateDBCfg → Commit |
+| **Получить из хранилища** | Development view, дескриптор ветки git↔ИБ | Pull: UpdateCfg (-revised -force) → UpdateDBCfg → sync ИБ→EDT |
+| **Настройки** | Development view / Navigator (проект) | Адрес/логин/пароль хранилища, опции, **шаблон комментария** |
+
+**Не включено** из upstream PR #3 (осознанно): «Получить в задачу…», baseline ветки хранилища, auto-merge storage branch, lock navigation (#4).
 
 ---
 
 ## Изменения форка (полный список)
 
-### 1. Поддержка single-project git (`src/...`)
+### 1. Поддержка single-project git (`src/...`) и nested `…/src/…`
 
-**Зачем:** типичный layout KICB/EDT — `.git` внутри проекта, пути в diff = `src/Catalogs/...`. Upstream понимал только monorepo `ProjectName/src/...`.
+**Зачем:** layout KICB/EDT — `.git` внутри проекта; также `cf/.../src/...`, `cfe/.../src/...`.
 
-**Что:** в `ExportHandler.getBranchDiff` — layout A (`Project/src/...`) и layout B (`src/...` + имя проекта по work tree). `toWorkspacePath` для FQN-конвертера EDT.
+**Что:** в `ExportHandler` — layout A/B + поиск сегмента `src`; `toProjectSourcePath` / `toWorkspacePath`.
 
 ### 2. EDT 2026.2: `loadActualConfigDumpInfo`
 
-**Зачем:** иначе падение после успешного LoadCfg, ConfigDumpInfo не актуализируется.
+**Зачем:** иначе падение после успешного LoadCfg.
 
-**Что:** в `Designer.loadConfigurationFromXml` — `IUpdateProjectFlow.loadActualConfigDumpInfo(Path)` вместо удалённого `setActualConfigDumpInfo`.
+**Что:** в `Designer.loadConfigurationFromXml` — прямой `loadActualConfigDumpInfo(Path)` + `try/finally` + `cancel()`.
 
-### 3. `try/finally` + `cancel()` sync flow
+### 3. UpdateDBCfg + commit в хранилище
 
-**Зачем:** без `finish()` после `startUpdateProjectFlow` синхронизация ИБ в EDT «залипает»; при исключении на `loadActual…` нужен `cancel()`.
+**Что:** `Designer.updateDatabaseConfiguration`, `Designer.storeObjects` (не PR-`commitObjects`).
 
-**Что:** флаг `finished`; в `finally` при `!finished` — `updateProjectFlow.cancel()` (best-effort). В `ExportHandler.pushBranchDiff` — `designer.dispose()` в `finally`.
+### 4. Прогресс и UI
 
-### 4. UpdateDBCfg + commit в хранилище
+**Что:** `ProgressMonitorDialog` на push; `OperationLogDialog` на pull; `subTask` / `syncExec`.
 
-**Зачем:** после LoadCfg Main ≠ DB; без UpdateDBCfg и `/ConfigurationRepositoryCommit` объекты остаются только в основной конфигурации ИБ, в хранилище 1С не попадают.
+### 5. Получить из хранилища (port PR #3)
 
-**Что:** `Designer.updateDatabaseConfiguration` (`/UpdateDBCfg`), `Designer.storeObjects` (`/ConfigurationRepositoryCommit`, комментарий `PluginEDT: {ветка}`).
+**Что:** `ImportHandler` (thin) + `StoragePullService` + `Designer.updateConfigurationFromRepository` / `retrieveConfigurationChangesFromInfobase`.
 
-### 5. Прогресс и UI с worker-thread
+### 6. Журнал операций
 
-**Зачем:** иначе EDT «висит» на `Process.waitFor` / JGit / export; MessageBox с non-UI thread → SWTException.
+**Что:** `OperationLogger` / `OperationLogDialog`. Лог:  
+`.metadata/.plugins/dev.zigr.dt.team.ui.storage/operations/storage-operation-*.log`
 
-**Что:** `ProgressMonitorDialog.run(true, false, …)` (cancelable=false — Designer `waitFor` без destroy), `subTask` по шагам, реальный monitor у `IExportOperation.run`, UI-диалоги через `Display.syncExec`.
+### 7. Шаблон комментария помещения
+
+Default: `EDT: {branch}, project {project}, changed files {changedFiles}`  
+Placeholders: `{branch}`, `{storageBranch}`, `{project}`, `{changedFiles}`, `{fileCount}`, `{files}`, `{infobase}`.
 
 ---
 
 ## Ветка
 
-- Разработка и история патчей: **`fix/storage-feedback`**
-- На GitHub default branch форка после merge содержит те же изменения (см. главную README)
-
-Сравнить с upstream/master:  
-https://github.com/SergeiPereskokov/PluginEDT/compare/master...fix/storage-feedback
+- Патчи UX/UpdateDBCfg: **`fix/storage-feedback`** (смержено в master)
+- Port PR #3: **`port/pr3-pull-logging`**
 
 ---
 
 ## Установка
 
-Готовая сборка форка (p2 archive, как у upstream):
-**https://github.com/SergeiPereskokov/PluginEDT/releases/download/v0.4.0-fork.1/build.zip**
-Tag: `v0.4.0-fork.1` (bundle version внутри = `0.4.0.202604042146`, патчи форка).
+Готовая сборка форка (p2 archive):
+**https://github.com/SergeiPereskokov/PluginEDT/releases/download/v0.4.0-fork.2/build.zip**  
+(если Release ещё нет — локально `out/build-fork-v0.4.0-fork.2.zip` / `out/build.zip`)
 
-### Через «Справка → Установить новое ПО» (рекомендуется)
+Tag: `v0.4.0-fork.2`.
 
-1. Скачать `build.zip` с [Release v0.4.0-fork.1](https://github.com/SergeiPereskokov/PluginEDT/releases/tag/v0.4.0-fork.1).
+### Через «Справка → Установить новое ПО»
+
+1. Скачать `build.zip`.
 2. EDT → **Справка → Установить новое ПО…**.
-3. **Add…** → **Archive…** → выбрать скачанный `build.zip` → Next.
-4. Отметить feature **Configuration repository** → Finish → перезапустить EDT (при странном sync — с `-clean`).
+3. **Add…** → **Archive…** → `build.zip` → Next.
+4. Feature **Configuration repository** → Finish → перезапуск (при странном sync — `-clean`).
 
-### После установки
-
-В EDT: настройки хранилища на проекте → команда «Поместить в хранилище» на дескрипторе ветки git↔ИБ.
-
-Upstream без патчей форка (для сравнения):
-https://github.com/ZigRinat85/PluginEDT/releases/download/v0.4.0/build.zip
-
-Статья автора upstream:
-https://infostart.ru/1c/articles/2442956/
+Upstream без патчей: https://github.com/ZigRinat85/PluginEDT/releases/download/v0.4.0/build.zip  
+Статья upstream: https://infostart.ru/1c/articles/2442956/
 
 ---
 
-## Новое в версии (upstream, без изменений смысла)
+## Smoke (EDT 2026.2.0.289)
 
-### 0.4.0
-- Поддержка EDT 2025.2 (ранние версии EDT не поддерживаются)
-- Мелкие исправления
-
-### 0.3.0
-- Конфигурация и расширения в одном репозитории
-- Настройки в разрезе «Проект»
-- Команда настроек в контекстном меню проекта (панель «Разработка» / «Навигатор»)
-
-### 0.2.0
-- Расширения конфигураций
-- Исправление доп. индексов EDT→ИБ
-- Настройки «ИБ + Проект»; опция «Помещать даже если конфигурации различаются»
+1. Bundle Active, меню: Поместить / Получить / Настройки (без task/baseline).
+2. Настройки: шаблон комментария save/reopen.
+3. Поместить: progress, UpdateDBCfg, комментарий по шаблону, лог-файл.
+4. Получить: изменения из хранилища в EDT; при `NO_CHANGES` + ожидаемые объекты — ошибка + лог.
+5. Single-project `src/...` и nested `cf/…/src/…` (если есть).
+6. Sticky sync: нет вечной блокировки ИБ после ошибки mid-flow.
 
 ---
 
 ## Open source / лицензия
 
-Репозиторий **публичный**, исходники открыты. Это fork upstream [ZigRinat85/PluginEDT](https://github.com/ZigRinat85/PluginEDT); условия распространения — как у upstream (отдельный файл `LICENSE` в корне пока отсутствует — ориентируйтесь на upstream и практику автора).
+Репозиторий **публичный**. Fork [ZigRinat85/PluginEDT](https://github.com/ZigRinat85/PluginEDT); условия — как у upstream.
 
 ---
 
 ## Исходники в git
 
-В репозитории — исходники плагина. Сборки stubs/out/class в `.p2` в git не входят.
+В репозитории — исходники плагина. Сборки `out/`, `pr3.diff`, stubs в `.p2` в git не входят.

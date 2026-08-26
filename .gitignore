@@ -1,5 +1,7 @@
 out/
 backup-orig/
 target/
+_pr3_extract/
+pr3.diff
 *.class
 .DS_Store
