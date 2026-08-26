@@ -107,4 +107,3 @@ https://infostart.ru/1c/articles/2442956/
 ## Исходники в git
 
 В репозитории — исходники плагина. Сборки stubs/out/class в `.p2` в git не входят.
-)
