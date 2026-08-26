@@ -110,22 +110,6 @@ https://infostart.ru/1c/articles/2442956/
 
 ---
 
-## OpenYellow / индексация
-
-Проект рассчитан на попадание в агрегатор **[OpenYellow](https://openyellow.org/)** (ежедневный сбор публичных GitHub-репозиториев для 1С:Предприятие).
-
-Критерии отбора (по [статье на Infostart](https://infostart.ru/1c/articles/2029643/) и [OpenBSL/OpenYellow](https://github.com/OpenBSL/OpenYellow)): достаточно **хотя бы одного** из условий:
-
-- `1С` (кириллическая «С») в **description** репозитория (GitHub About)
-- `1C:Enterprise` или `1C:Предприятие` в description
-- topic `1c-enterprise` или `1c-edt`
-
-Дополнительно для списков «свежие / обновлённые» обычно нужна **≥1 звезда**. Отдельной submit-формы нет — индексация автоматическая, цикл около суток. Значок рейтинга (TOP-500) можно добавить в README позже из колонки на [openyellow.org](https://openyellow.org/).
-
-Исходники агрегатора: https://github.com/OpenBSL/OpenYellow
-
----
-
 ## Исходники в git
 
 В репозитории — исходники плагина. Сборки stubs/out/class в `.p2` в git не входят.
